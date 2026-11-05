@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.DS_Store
+
+# local tooling config
+.claude/
+
+# run artifacts
+runs/
+# anchored to the repo root on purpose: an unanchored "data/" would also match
+# Know-Clearer/verl/data/, which holds tracked source (data_format.py).
+/data/
+wandb_logs/
+outputs/
+checkpoints/
+*.jsonl
+*.parquet
+*.pdf

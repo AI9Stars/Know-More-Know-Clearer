@@ -1,0 +1,86 @@
+# Know-More pipeline configuration.
+#
+# Copy this file, point the paths at your data, and pass it to every stage:
+#     knowmore sample --config configs/my_run.yaml
+#
+# Any key can be overridden on the command line without editing the file:
+#     knowmore sample --config configs/my_run.yaml --set sampling.n_samples=8
+
+# ---------------------------------------------------------------------------
+# Roots. ${data_root} and ${run_root} expand inside the path keys below.
+# ---------------------------------------------------------------------------
+data_root: ./data
+run_root: ./runs/qwen2.5-7b-nq
+dataset: nq            # free-form label, used only in logs
+
+# ---------------------------------------------------------------------------
+# Where the base model is served. Start vLLM first, for example:
+#
+#   python -m vllm.entrypoints.openai.api_server \
+#       --model /path/to/Qwen2.5-7B-Instruct \
+#       --dtype bfloat16 --port 7999 --tensor-parallel-size 1 \
+#       --trust-remote-code
+#
+# VLLM_BASE_URL / VLLM_API_KEY / VLLM_MODEL override these at runtime.
+# ---------------------------------------------------------------------------
+endpoint:
+  base_url: http://localhost:7999/v1
+  api_key: EMPTY
+  model: /path/to/Qwen2.5-7B-Instruct    # REQUIRED
+  timeout: 120.0
+  max_retries: 3
+
+# ---------------------------------------------------------------------------
+# Stage inputs and outputs.
+# ---------------------------------------------------------------------------
+# JSONL, one {"question": ..., "answer": ...} per line.
+input_path: ${data_root}/nq/train.jsonl
+
+sample_path:    ${run_root}/1_samples.jsonl
+diagnosis_path: ${run_root}/2_diagnosis.jsonl
+meta_path:      ${run_root}/3_meta.jsonl
+retrieval_path: ${run_root}/4_retrieval.jsonl
+synthesis_path: ${run_root}/5_synthesis.jsonl
+sft_path:       ${run_root}/6_train.jsonl
+
+# ---------------------------------------------------------------------------
+# Stage 1: boundary sampling.
+# n_samples is the main cost knob -- it multiplies your dataset size by itself.
+# ---------------------------------------------------------------------------
+sampling:
+  n_samples: 16
+  max_tokens: 32
+  temperature: 0.8
+  top_p: 0.95
+  workers: 8
+
+# ---------------------------------------------------------------------------
+# Stage 2: knowledge-boundary diagnosis.
+# ---------------------------------------------------------------------------
+diagnosis:
+  max_tokens: 512
+  temperature: 0.8
+  top_p: 0.9
+  workers: 8
+
+# ---------------------------------------------------------------------------
+# Stage 3: meta-recognition and knowledge-query generation.
+# Low temperature: this stage should be faithful to the diagnosis, not creative.
+# ---------------------------------------------------------------------------
+meta:
+  max_tokens: 512
+  temperature: 0.2
+  top_p: 0.9
+  workers: 8
+  max_samples_in_prompt: 6
+  max_explanation_chars: 300
+
+# ---------------------------------------------------------------------------
+# Stage 5: region-conditioned QA synthesis.
+# ---------------------------------------------------------------------------
+synthesis:
+  max_tokens: 512
+  temperature: 0.8
+  top_p: 0.95
+  workers: 8
+  max_passages: 5

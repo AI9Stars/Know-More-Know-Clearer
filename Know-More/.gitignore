@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# run artifacts
+runs/
+data/
+*.jsonl
+*.parquet
+*.png
+
+# local overrides
+configs/*.local.yaml
+.DS_Store
+
+# reference copies of the paper -- not redistributed with the code
+*.pdf
